@@ -130,7 +130,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <footer className="bg-gray-800 mt-16">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-gray-400">
-            <p>&copy; 2024 PDP MOVIES. Built with Next.js and TMDB API.</p>
+            <p>&copy; 2025 PDP MOVIE BUILD BY FROSTGARELINE</p>
           </div>
         </div>
       </footer>
