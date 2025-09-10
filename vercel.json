@@ -3,16 +3,6 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["sin1"],
-  "env": {
-    "TMDB_API_KEY": "@tmdb_api_key",
-    "TMDB_BASE_URL": "https://api.themoviedb.org/3",
-    "TMDB_IMAGE_BASE_URL": "https://image.tmdb.org/t/p"
-  },
-  "build": {
-    "env": {
-      "TMDB_API_KEY": "@tmdb_api_key"
-    }
-  },
   "functions": {
     "pages/api/**/*.js": {
       "maxDuration": 30
