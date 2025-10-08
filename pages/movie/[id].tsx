@@ -7,6 +7,7 @@ import { Star, Calendar, Clock, Play } from 'lucide-react';
 import VideoPlayer from '../../components/VideoPlayer';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { MovieDetails, getImageUrl } from '../../lib/tmdb';
+import { tmdbClient, isStaticEnvironment } from '../../lib/tmdb-client';
 
 const MovieDetail: React.FC = () => {
   const router = useRouter();
@@ -24,8 +25,18 @@ const MovieDetail: React.FC = () => {
   const fetchMovieDetails = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`/api/movies/${id}`);
-      setMovie(response.data);
+      
+      let movieData;
+      if (isStaticEnvironment()) {
+        // Use direct TMDB API for Android/static environments
+        movieData = await tmdbClient.getMovieDetails(Number(id));
+      } else {
+        // Use Next.js API routes for web
+        const response = await axios.get(`/api/movies/${id}`);
+        movieData = response.data;
+      }
+      
+      setMovie(movieData);
     } catch (error) {
       console.error('Error fetching movie details:', error);
     } finally {
@@ -100,7 +111,8 @@ const MovieDetail: React.FC = () => {
               
               <button
                 onClick={() => setShowPlayer(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2"
+                className="tv-focusable bg-red-600 hover:bg-red-700 focus:bg-red-700 focus:ring-4 focus:ring-red-500/50 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 focus:outline-none focus:scale-105"
+                tabIndex={0}
               >
                 <Play className="h-5 w-5" />
                 <span>Watch Now</span>

@@ -7,6 +7,7 @@ import { Star, Calendar, Tv, Play } from 'lucide-react';
 import VideoPlayer from '../../components/VideoPlayer';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { TVDetails, Season, Episode, getImageUrl } from '../../lib/tmdb';
+import { tmdbClient, isStaticEnvironment } from '../../lib/tmdb-client';
 
 const TVDetail: React.FC = () => {
   const router = useRouter();
@@ -34,8 +35,17 @@ const TVDetail: React.FC = () => {
   const fetchTVDetails = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`/api/tv/${id}`);
-      const tvData = response.data;
+      
+      let tvData;
+      if (isStaticEnvironment()) {
+        // Use direct TMDB API for Android/static environments
+        tvData = await tmdbClient.getTVDetails(Number(id));
+      } else {
+        // Use Next.js API routes for web
+        const response = await axios.get(`/api/tv/${id}`);
+        tvData = response.data;
+      }
+      
       setTVShow(tvData);
       
       // Auto-select first season if available
@@ -53,8 +63,18 @@ const TVDetail: React.FC = () => {
   const fetchSeasonEpisodes = async (seasonNumber: number) => {
     try {
       setIsLoadingEpisodes(true);
-      const response = await axios.get(`/api/tv/${id}/season/${seasonNumber}`);
-      const episodeData = response.data.episodes || [];
+      
+      let seasonData;
+      if (isStaticEnvironment()) {
+        // Use direct TMDB API for Android/static environments
+        seasonData = await tmdbClient.getTVSeason(Number(id), seasonNumber);
+      } else {
+        // Use Next.js API routes for web
+        const response = await axios.get(`/api/tv/${id}/season/${seasonNumber}`);
+        seasonData = response.data;
+      }
+      
+      const episodeData = seasonData.episodes || [];
       setEpisodes(episodeData);
       
       // Auto-select first episode
@@ -140,7 +160,8 @@ const TVDetail: React.FC = () => {
               {selectedEpisode && (
                 <button
                   onClick={() => handlePlayEpisode(selectedEpisode)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2"
+                  className="tv-focusable bg-red-600 hover:bg-red-700 focus:bg-red-700 focus:ring-4 focus:ring-red-500/50 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 focus:outline-none focus:scale-105"
+                  tabIndex={0}
                 >
                   <Play className="h-5 w-5" />
                   <span>Watch S{selectedSeason?.season_number}E{selectedEpisode.episode_number}</span>
@@ -184,11 +205,12 @@ const TVDetail: React.FC = () => {
                     <button
                       key={season.id}
                       onClick={() => setSelectedSeason(season)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      className={`tv-focusable px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:scale-105 ${
                         selectedSeason?.id === season.id
                           ? 'bg-red-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 focus:bg-red-600 focus:text-white'
                       }`}
+                      tabIndex={0}
                     >
                       Season {season.season_number}
                     </button>
@@ -210,8 +232,17 @@ const TVDetail: React.FC = () => {
                       {episodes.map(episode => (
                         <div
                           key={episode.id}
-                          className="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors cursor-pointer"
+                          className="tv-focusable bg-gray-800 rounded-lg p-4 hover:bg-gray-700 focus:bg-gray-700 focus:ring-2 focus:ring-red-500 focus:outline-none focus:scale-[1.02] transition-all duration-200 cursor-pointer"
                           onClick={() => handlePlayEpisode(episode)}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Play episode ${episode.episode_number}: ${episode.name}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handlePlayEpisode(episode);
+                            }
+                          }}
                         >
                           <div className="flex items-start space-x-4">
                             {episode.still_path && (

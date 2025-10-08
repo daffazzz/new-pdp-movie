@@ -45,3 +45,4 @@ In Vercel dashboard > Settings > Environment Variables:
 
 ## Done! 🎉
 Your PDP MOVIES website is now live!
+

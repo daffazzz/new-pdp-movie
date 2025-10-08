@@ -42,3 +42,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ movieId, tvId, season, episod
 };
 
 export default VideoPlayer;
+

@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -20,6 +23,7 @@ const nextConfig = {
     TMDB_API_KEY: process.env.TMDB_API_KEY,
     TMDB_BASE_URL: process.env.TMDB_BASE_URL,
     TMDB_IMAGE_BASE_URL: process.env.TMDB_IMAGE_BASE_URL,
+    NEXT_PUBLIC_TMDB_API_KEY: process.env.NEXT_PUBLIC_TMDB_API_KEY,
   },
   compress: true,
   poweredByHeader: false,

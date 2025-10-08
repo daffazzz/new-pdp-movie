@@ -49,3 +49,228 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Android TV Optimizations */
+@media screen and (min-width: 1920px) {
+  /* TV Focus Styles */
+  *:focus {
+    outline: none !important;
+  }
+  
+  button:focus,
+  a:focus,
+  input:focus,
+  [tabindex]:focus {
+    outline: 4px solid #a855f7 !important;
+    outline-offset: 2px;
+    border-radius: 12px;
+    transform: scale(1.05);
+    transition: all 0.3s ease-in-out;
+    z-index: 10;
+    position: relative;
+  }
+  
+  /* Enhanced focus for interactive elements */
+  .tv-focusable:focus {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899) !important;
+    color: white !important;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+  }
+  
+  /* Card focus styles */
+  .movie-card:focus {
+    transform: scale(1.1);
+    z-index: 20;
+    box-shadow: 0 20px 40px rgba(168, 85, 247, 0.4);
+  }
+  
+  /* Navigation focus */
+  .nav-item:focus {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899) !important;
+    transform: scale(1.1);
+  }
+  
+  /* Button hover effects for TV */
+  button {
+    transition: all 0.3s ease;
+  }
+  
+  button:hover,
+  button:focus {
+    transform: scale(1.05);
+  }
+  
+  /* Larger text for TV viewing */
+  body {
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  
+  h1 {
+    font-size: 3.5rem;
+  }
+  
+  h2 {
+    font-size: 2.5rem;
+  }
+  
+  h3 {
+    font-size: 2rem;
+  }
+  
+  /* Grid spacing for TV */
+  .tv-grid {
+    gap: 2rem;
+  }
+  
+  /* Remove hover effects on TV */
+  @media (hover: none) {
+    *:hover {
+      transform: none !important;
+      background-color: inherit !important;
+    }
+  }
+}
+
+/* TV Remote Navigation Helper */
+.tv-navigation {
+  scroll-behavior: smooth;
+}
+
+/* Focus trap for modals on TV */
+.tv-modal:focus-within {
+  outline: 4px solid #ef4444;
+  outline-offset: -4px;
+}
+
+/* Ensure all interactive elements are focusable */
+[role="button"],
+.clickable {
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Modern animations */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes tvFocusGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(168, 85, 247, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(168, 85, 247, 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.tv-focus-glow:focus {
+  animation: tvFocusGlow 2s infinite;
+}
+
+.gradient-animate {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Safe Area Support for Mobile Devices */
+.safe-area-inset {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-inset-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-inset-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile-specific optimizations */
+@media screen and (max-width: 768px) {
+  /* Smooth scrolling for mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better touch targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Status bar and notch handling */
+  html, body {
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Ensure content doesn't go under notch */
+  .container {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  
+  /* Header safe area */
+  header {
+    padding-top: env(safe-area-inset-top) !important;
+  }
+  
+  /* Main content safe area */
+  main {
+    padding-left: env(safe-area-inset-left) !important;
+    padding-right: env(safe-area-inset-right) !important;
+  }
+  
+  /* Footer safe area */
+  footer {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    padding-left: env(safe-area-inset-left) !important;
+    padding-right: env(safe-area-inset-right) !important;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

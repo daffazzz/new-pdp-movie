@@ -7,6 +7,7 @@ import { Star, Play } from 'lucide-react';
 import MovieGrid from '../components/MovieGrid';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Movie, TVShow, getImageUrl } from '../lib/tmdb';
+import { tmdbClient, isStaticEnvironment } from '../lib/tmdb-client';
 
 // Types for items with media_type
 type MovieWithType = Movie & { media_type: 'movie' };
@@ -33,17 +34,42 @@ const Home: React.FC = () => {
         const randomMoviePage = Math.floor(Math.random() * 5) + 1; // Pages 1-5
         const randomTVPage = Math.floor(Math.random() * 5) + 1;
         
-        const [moviesResponse, tvResponse, trendingMoviesResponse, trendingTVResponse] = await Promise.all([
-          axios.get('/api/movies/popular?page=1'),
-          axios.get('/api/tv/popular?page=1'),
-          axios.get(`/api/movies/popular?page=${randomMoviePage}`),
-          axios.get(`/api/tv/popular?page=${randomTVPage}`),
-        ]);
+        let movies, tvShows, trendingMovies, trendingTVShows;
+        let moviesData, tvData, moviesResponse, tvResponse;
 
-        const movies = moviesResponse.data.results || [];
-        const tvShows = tvResponse.data.results || [];
-        const trendingMovies = trendingMoviesResponse.data.results || [];
-        const trendingTVShows = trendingTVResponse.data.results || [];
+        if (isStaticEnvironment()) {
+          // Use direct TMDB API for Android/static environments
+          console.log('Fetching from TMDB API directly...');
+          const [moviesResult, tvResult, trendingMoviesData, trendingTVData] = await Promise.all([
+            tmdbClient.getPopularMovies(1),
+            tmdbClient.getPopularTVShows(1),
+            tmdbClient.getTrendingMovies(randomMoviePage),
+            tmdbClient.getTrendingTVShows(randomTVPage),
+          ]);
+
+          moviesData = moviesResult;
+          tvData = tvResult;
+          movies = moviesResult.results || [];
+          tvShows = tvResult.results || [];
+          trendingMovies = trendingMoviesData.results || [];
+          trendingTVShows = trendingTVData.results || [];
+        } else {
+          // Use Next.js API routes for web
+          console.log('Fetching from Next.js API routes...');
+          const [moviesRes, tvRes, trendingMoviesResponse, trendingTVResponse] = await Promise.all([
+            axios.get('/api/movies/popular?page=1'),
+            axios.get('/api/tv/popular?page=1'),
+            axios.get(`/api/movies/popular?page=${randomMoviePage}`),
+            axios.get(`/api/tv/popular?page=${randomTVPage}`),
+          ]);
+
+          moviesResponse = moviesRes;
+          tvResponse = tvRes;
+          movies = moviesRes.data.results || [];
+          tvShows = tvRes.data.results || [];
+          trendingMovies = trendingMoviesResponse.data.results || [];
+          trendingTVShows = trendingTVResponse.data.results || [];
+        }
         
         setPopularMovies(movies);
         setPopularTVShows(tvShows);
@@ -61,8 +87,13 @@ const Home: React.FC = () => {
         // Random starting index
         setCurrentRecommendedIndex(Math.floor(Math.random() * Math.min(shuffled.length, 10)));
         
-        setHasMoreMovies(moviesResponse.data.page < moviesResponse.data.total_pages);
-        setHasMoreTVShows(tvResponse.data.page < tvResponse.data.total_pages);
+        if (isStaticEnvironment()) {
+          setHasMoreMovies(moviesData ? 1 < moviesData.total_pages : false);
+          setHasMoreTVShows(tvData ? 1 < tvData.total_pages : false);
+        } else {
+          setHasMoreMovies(moviesResponse ? moviesResponse.data.page < moviesResponse.data.total_pages : false);
+          setHasMoreTVShows(tvResponse ? tvResponse.data.page < tvResponse.data.total_pages : false);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -110,12 +141,20 @@ const Home: React.FC = () => {
     try {
       setIsLoadingMovies(true);
       const nextPage = moviePage + 1;
-      const response = await axios.get(`/api/movies/popular?page=${nextPage}`);
-      const newMovies = response.data.results || [];
+      
+      let response;
+      if (isStaticEnvironment()) {
+        response = await tmdbClient.getPopularMovies(nextPage);
+      } else {
+        const apiResponse = await axios.get(`/api/movies/popular?page=${nextPage}`);
+        response = apiResponse.data;
+      }
+      
+      const newMovies = response.results || [];
       
       setPopularMovies(prev => [...prev, ...newMovies]);
       setMoviePage(nextPage);
-      setHasMoreMovies(nextPage < response.data.total_pages);
+      setHasMoreMovies(nextPage < response.total_pages);
     } catch (error) {
       console.error('Error loading more movies:', error);
     } finally {
@@ -129,12 +168,20 @@ const Home: React.FC = () => {
     try {
       setIsLoadingTVShows(true);
       const nextPage = tvPage + 1;
-      const response = await axios.get(`/api/tv/popular?page=${nextPage}`);
-      const newTVShows = response.data.results || [];
+      
+      let response;
+      if (isStaticEnvironment()) {
+        response = await tmdbClient.getPopularTVShows(nextPage);
+      } else {
+        const apiResponse = await axios.get(`/api/tv/popular?page=${nextPage}`);
+        response = apiResponse.data;
+      }
+      
+      const newTVShows = response.results || [];
       
       setPopularTVShows(prev => [...prev, ...newTVShows]);
       setTVPage(nextPage);
-      setHasMoreTVShows(nextPage < response.data.total_pages);
+      setHasMoreTVShows(nextPage < response.total_pages);
     } catch (error) {
       console.error('Error loading more TV shows:', error);
     } finally {
@@ -166,7 +213,7 @@ const Home: React.FC = () => {
           {/* Featured Movie/Series Carousel */}
           <div className="relative">
             {recommendedItems.length > 0 && (
-              <div className="relative h-96 md:h-[500px] rounded-lg overflow-hidden bg-gray-800">
+              <div className="relative h-48 sm:h-56 md:h-64 rounded-lg overflow-hidden bg-gray-900 shadow-xl">
                 {/* Featured Item */}
                 <div className="relative h-full transition-all duration-1000 ease-in-out">
                   <Image
@@ -179,64 +226,61 @@ const Home: React.FC = () => {
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyayeUhtcdGOynepJeP//Z"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                   
                   {/* Content Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6">
                     <div className="max-w-2xl">
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className="bg-red-600 text-white text-xs px-2 py-1 rounded uppercase font-semibold">
+                        <span className="bg-gray-800/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded uppercase font-medium">
                           {recommendedItems[currentRecommendedIndex]?.media_type === 'movie' ? 'Movie' : 'TV Series'}
                         </span>
-                        <span className="text-gray-300 text-sm">Recommended</span>
-                      </div>
-                      
-                      <h3 className="text-2xl md:text-4xl font-bold text-white mb-4">
-                        {getItemTitle(recommendedItems[currentRecommendedIndex])}
-                      </h3>
-                      <p className="text-gray-200 text-sm md:text-base mb-6 line-clamp-3">
-                        {recommendedItems[currentRecommendedIndex]?.overview}
-                      </p>
-                      
-                      <div className="flex items-center space-x-4 mb-6">
                         <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="text-white">{recommendedItems[currentRecommendedIndex]?.vote_average.toFixed(1)}</span>
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <span className="text-white text-sm">{recommendedItems[currentRecommendedIndex]?.vote_average.toFixed(1)}</span>
                         </div>
-                        <span className="text-gray-300">
+                        <span className="text-gray-300 text-sm">
                           {getItemYear(recommendedItems[currentRecommendedIndex])}
                         </span>
                       </div>
                       
-                      <div className="flex space-x-4">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-3 line-clamp-2">
+                        {getItemTitle(recommendedItems[currentRecommendedIndex])}
+                      </h3>
+                      
+                      <div className="flex space-x-2">
                         <Link
                           href={getItemLink(recommendedItems[currentRecommendedIndex])}
-                          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2"
+                          className="tv-focusable bg-white text-black hover:bg-gray-200 focus:bg-gray-200 focus:ring-4 focus:ring-white/50 px-3 py-1.5 rounded font-semibold transition-all duration-200 flex items-center space-x-1 focus:outline-none focus:scale-105 text-sm"
+                          tabIndex={0}
                         >
-                          <Play className="h-5 w-5" />
-                          <span>Watch Now</span>
+                          <Play className="h-3 w-3" />
+                          <span>Play</span>
                         </Link>
                         <Link
                           href={getItemLink(recommendedItems[currentRecommendedIndex])}
-                          className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+                          className="tv-focusable bg-gray-700/80 backdrop-blur-sm text-white hover:bg-gray-600 focus:bg-gray-600 focus:ring-4 focus:ring-gray-500/50 px-3 py-1.5 rounded font-semibold transition-all duration-200 focus:outline-none focus:scale-105 text-sm"
+                          tabIndex={0}
                         >
-                          More Info
+                          Info
                         </Link>
                       </div>
                     </div>
                   </div>
 
                   {/* Progress Indicators */}
-                  <div className="absolute bottom-4 right-4 flex space-x-2">
+                  <div className="absolute bottom-2 right-2 flex space-x-0.5">
                     {recommendedItems.slice(0, Math.min(recommendedItems.length, 5)).map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentRecommendedIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                        className={`tv-focusable w-px h-px rounded-full transition-all duration-300 focus:outline-none focus:ring-0 focus:scale-105 ${
                           index === currentRecommendedIndex % Math.min(recommendedItems.length, 5)
-                            ? 'bg-red-500'
-                            : 'bg-gray-500 hover:bg-gray-400'
+                            ? 'bg-white/80'
+                            : 'bg-gray-500/40 hover:bg-gray-400/60 focus:bg-white/60'
                         }`}
+                        tabIndex={0}
+                        aria-label={`Go to slide ${index + 1}`}
                       />
                     ))}
                   </div>
@@ -302,7 +346,8 @@ const Home: React.FC = () => {
               <button
                 onClick={loadMoreMovies}
                 disabled={isLoadingMovies}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2 mx-auto"
+                className="tv-focusable bg-gray-700 hover:bg-gray-600 focus:bg-gray-600 focus:ring-4 focus:ring-gray-500/50 disabled:bg-gray-800 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 mx-auto focus:outline-none focus:scale-105"
+                tabIndex={0}
               >
                 {isLoadingMovies ? (
                   <>
@@ -329,7 +374,8 @@ const Home: React.FC = () => {
               <button
                 onClick={loadMoreTVShows}
                 disabled={isLoadingTVShows}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2 mx-auto"
+                className="tv-focusable bg-gray-700 hover:bg-gray-600 focus:bg-gray-600 focus:ring-4 focus:ring-gray-500/50 disabled:bg-gray-800 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 mx-auto focus:outline-none focus:scale-105"
+                tabIndex={0}
               >
                 {isLoadingTVShows ? (
                   <>

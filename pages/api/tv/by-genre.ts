@@ -1,33 +1,22 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { tmdbApi } from '../../../lib/tmdb';
-import { setCacheHeaders, cacheConfigs } from '../../../lib/api-cache';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { tmdb } from '../../../lib/tmdb';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
+  if (req.method === 'GET') {
+    const { genre, page, country } = req.query;
 
-  try {
-    const { genre, page = 1 } = req.query;
-    
-    if (!genre) {
-      return res.status(400).json({ message: 'Genre parameter is required' });
+    if (typeof genre !== 'string' || typeof page !== 'string') {
+      return res.status(400).json({ message: 'Invalid genre or page' });
     }
 
-    // Set cache for genre-based content
-    setCacheHeaders(res, cacheConfigs.genre);
-
-    const response = await tmdbApi.get('/discover/tv', {
-      params: { 
-        with_genres: genre,
-        page,
-        sort_by: 'popularity.desc'
-      }
-    });
-
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error('Error fetching TV shows by genre:', error);
-    res.status(500).json({ message: 'Error fetching TV shows by genre' });
+    try {
+      const data = await tmdb.getTVShowsByGenre(parseInt(genre), parseInt(page), country as string);
+      res.status(200).json(data);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  } else {
+    res.setHeader('Allow', ['GET']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

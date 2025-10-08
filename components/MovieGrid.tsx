@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import MovieCard from './MovieCard';
 import { Movie, TVShow } from '../lib/tmdb';
 
@@ -9,10 +9,21 @@ interface MovieGridProps {
 }
 
 const MovieGrid: React.FC<MovieGridProps> = ({ items, type, title }) => {
+  const [isAndroidTV, setIsAndroidTV] = useState(false);
+  
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isTV = /android.*tv|smart-tv|smarttv/.test(userAgent) ||
+                 window.innerWidth >= 1920 && window.innerHeight >= 1080;
+    setIsAndroidTV(isTV);
+  }, []);
+  
   if (!items || items.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-400 text-lg">No {type === 'movie' ? 'movies' : 'TV shows'} found.</p>
+        <p className={`text-gray-400 ${isAndroidTV ? 'text-xl' : 'text-lg'}`}>
+          No {type === 'movie' ? 'movies' : 'TV shows'} found.
+        </p>
       </div>
     );
   }
@@ -23,7 +34,11 @@ const MovieGrid: React.FC<MovieGridProps> = ({ items, type, title }) => {
         <h2 className="text-2xl font-bold text-white">{title}</h2>
       )}
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <div className={`tv-navigation grid ${
+        isAndroidTV 
+          ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 tv-grid'
+          : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'
+      }`}>
         {items.map((item) => (
           <MovieCard key={item.id} item={item} type={type} />
         ))}

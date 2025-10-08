@@ -149,3 +149,4 @@ export function useSearch(query: string, page: number = 1) {
     }
   );
 }
+

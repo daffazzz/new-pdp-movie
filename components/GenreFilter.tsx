@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Genre } from '../lib/tmdb';
 import { Filter } from 'lucide-react';
+import { tmdbClient, isStaticEnvironment } from '../lib/tmdb-client';
 
 interface GenreFilterProps {
   type: 'movie' | 'tv';
@@ -12,6 +13,14 @@ interface GenreFilterProps {
 const GenreFilter: React.FC<GenreFilterProps> = ({ type, selectedGenre, onGenreChange }) => {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isAndroidTV, setIsAndroidTV] = useState(false);
+  
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isTV = /android.*tv|smart-tv|smarttv/.test(userAgent) ||
+                 window.innerWidth >= 1920 && window.innerHeight >= 1080;
+    setIsAndroidTV(isTV);
+  }, []);
 
   useEffect(() => {
     fetchGenres();
@@ -19,8 +28,21 @@ const GenreFilter: React.FC<GenreFilterProps> = ({ type, selectedGenre, onGenreC
 
   const fetchGenres = async () => {
     try {
-      const response = await axios.get(`/api/genres/${type === 'movie' ? 'movies' : 'tv'}`);
-      setGenres(response.data.genres || []);
+      let response;
+      if (isStaticEnvironment()) {
+        // Use direct TMDB API for Android/static environments
+        if (type === 'movie') {
+          response = await tmdbClient.getMovieGenres();
+        } else {
+          response = await tmdbClient.getTVGenres();
+        }
+      } else {
+        // Use Next.js API routes for web
+        const apiResponse = await axios.get(`/api/genres/${type === 'movie' ? 'movies' : 'tv'}`);
+        response = apiResponse.data;
+      }
+      
+      setGenres(response.genres || []);
     } catch (error) {
       console.error('Error fetching genres:', error);
     }
@@ -39,7 +61,10 @@ const GenreFilter: React.FC<GenreFilterProps> = ({ type, selectedGenre, onGenreC
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 min-w-[150px] justify-between"
+        className={`tv-focusable flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 focus:bg-red-600 focus:ring-4 focus:ring-red-500/50 text-white px-4 py-2 rounded-lg transition-all duration-200 min-w-[150px] justify-between focus:outline-none ${
+          isAndroidTV ? 'focus:scale-105 text-lg px-6 py-3' : ''
+        }`}
+        tabIndex={0}
       >
         <div className="flex items-center space-x-2">
           <Filter className="h-4 w-4" />
@@ -70,9 +95,12 @@ const GenreFilter: React.FC<GenreFilterProps> = ({ type, selectedGenre, onGenreC
             <div className="py-2">
               <button
                 onClick={() => handleGenreSelect(null)}
-                className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors duration-200 ${
+                className={`tv-focusable w-full text-left px-4 py-2 hover:bg-gray-700 focus:bg-red-600 focus:text-white focus:outline-none transition-all duration-200 ${
+                  isAndroidTV ? 'text-lg py-3 focus:scale-[1.02]' : ''
+                } ${
                   selectedGenre === null ? 'bg-red-600 text-white' : 'text-gray-300'
                 }`}
+                tabIndex={0}
               >
                 All Genres
               </button>
@@ -81,9 +109,12 @@ const GenreFilter: React.FC<GenreFilterProps> = ({ type, selectedGenre, onGenreC
                 <button
                   key={genre.id}
                   onClick={() => handleGenreSelect(genre.id)}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors duration-200 ${
+                  className={`tv-focusable w-full text-left px-4 py-2 hover:bg-gray-700 focus:bg-red-600 focus:text-white focus:outline-none transition-all duration-200 ${
+                    isAndroidTV ? 'text-lg py-3 focus:scale-[1.02]' : ''
+                  } ${
                     selectedGenre === genre.id ? 'bg-red-600 text-white' : 'text-gray-300'
                   }`}
+                  tabIndex={0}
                 >
                   {genre.name}
                 </button>

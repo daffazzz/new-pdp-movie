@@ -255,3 +255,4 @@ CACHE_TTL_GENRES=3600000      # 1 hour
 - Offline capability: Full browsing
 
 **Performance Improvement: 70-90% faster loading! 🚀**
+

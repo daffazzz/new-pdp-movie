@@ -5,6 +5,7 @@ import axios from 'axios';
 import MovieGrid from '../components/MovieGrid';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Movie, TVShow } from '../lib/tmdb';
+import { tmdbClient, isStaticEnvironment } from '../lib/tmdb-client';
 
 interface SearchResult extends Movie, TVShow {
   media_type: 'movie' | 'tv' | 'person';
@@ -27,8 +28,18 @@ const Search: React.FC = () => {
   const searchContent = async (query: string, pageNum: number, reset: boolean = false) => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`/api/search?query=${encodeURIComponent(query)}&page=${pageNum}`);
-      const newResults = response.data.results?.filter((item: SearchResult) => 
+      
+      let response;
+      if (isStaticEnvironment()) {
+        // Use direct TMDB API for Android/static environments
+        response = await tmdbClient.searchMulti(query, pageNum);
+      } else {
+        // Use Next.js API routes for web
+        const apiResponse = await axios.get(`/api/search?query=${encodeURIComponent(query)}&page=${pageNum}`);
+        response = apiResponse.data;
+      }
+      
+      const newResults = response.results?.filter((item: SearchResult) => 
         item.media_type === 'movie' || item.media_type === 'tv'
       ) || [];
       
@@ -38,7 +49,7 @@ const Search: React.FC = () => {
         setResults(prev => [...prev, ...newResults]);
       }
       
-      setHasMore(pageNum < response.data.total_pages);
+      setHasMore(pageNum < response.total_pages);
     } catch (error) {
       console.error('Error searching:', error);
     } finally {
@@ -98,7 +109,8 @@ const Search: React.FC = () => {
                     <button
                       onClick={loadMore}
                       disabled={isLoading}
-                      className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2 mx-auto"
+                      className="tv-focusable bg-gray-700 hover:bg-gray-600 focus:bg-gray-600 focus:ring-4 focus:ring-gray-500/50 disabled:bg-gray-800 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 mx-auto focus:outline-none focus:scale-105"
+                      tabIndex={0}
                     >
                       {isLoading ? (
                         <>

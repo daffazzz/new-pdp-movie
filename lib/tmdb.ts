@@ -79,3 +79,76 @@ export interface Genre {
   id: number;
   name: string;
 }
+
+export interface Country {
+  iso_3166_1: string;
+  english_name: string;
+}
+
+export interface Movie {
+  id: number;
+  title: string;
+}
+
+export const tmdb = {
+  getPopularMovies: async (page: number = 1, country: string | null = null) => {
+    const params: any = { page, sort_by: 'popularity.desc' };
+    if (country) {
+      params.with_origin_country = country;
+    }
+    const response = await tmdbApi.get('/discover/movie', { params });
+    return response.data;
+  },
+  getMoviesByGenre: async (genreId: number, page: number = 1, country: string | null = null) => {
+    const params: any = { with_genres: genreId, page, sort_by: 'popularity.desc' };
+    if (country) {
+      params.with_origin_country = country;
+    }
+    const response = await tmdbApi.get('/discover/movie', { params });
+    return response.data;
+  },
+  getPopularTVShows: async (page: number = 1, country: string | null = null) => {
+    const params: any = { page, sort_by: 'popularity.desc' };
+    if (country) {
+      params.with_origin_country = country;
+    }
+    const response = await tmdbApi.get('/discover/tv', { params });
+    return response.data;
+  },
+  getTVShowsByGenre: async (genreId: number, page: number = 1, country: string | null = null) => {
+    const params: any = { with_genres: genreId, page, sort_by: 'popularity.desc' };
+    if (country) {
+      params.with_origin_country = country;
+    }
+    const response = await tmdbApi.get('/discover/tv', { params });
+    return response.data;
+  },
+  getMovieGenres: async () => {
+    const response = await tmdbApi.get('/genre/movie/list');
+    return response.data;
+  },
+  getTVGenres: async () => {
+    const response = await tmdbApi.get('/genre/tv/list');
+    return response.data;
+  },
+  getCountries: async () => {
+    const response = await tmdbApi.get('/configuration/countries');
+    return response.data;
+  },
+  getMovieDetails: async (id: number) => {
+    const response = await tmdbApi.get(`/movie/${id}`);
+    return response.data;
+  },
+  getTVDetails: async (id: number) => {
+    const response = await tmdbApi.get(`/tv/${id}`);
+    return response.data;
+  },
+  getTVSeason: async (id: number, seasonNumber: number) => {
+    const response = await tmdbApi.get(`/tv/${id}/season/${seasonNumber}`);
+    return response.data;
+  },
+  searchMulti: async (query: string, page: number = 1) => {
+    const response = await tmdbApi.get('/search/multi', { params: { query, page } });
+    return response.data;
+  },
+};

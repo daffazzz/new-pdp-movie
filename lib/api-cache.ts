@@ -71,3 +71,4 @@ export const cacheConfigs = {
     cdnMaxAge: 21600,
   },
 };
+

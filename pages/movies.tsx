@@ -4,7 +4,10 @@ import axios from 'axios';
 import MovieGrid from '../components/MovieGrid';
 import LoadingSpinner from '../components/LoadingSpinner';
 import GenreFilter from '../components/GenreFilter';
+import CountryFilter from '../components/CountryFilter';
 import { Movie } from '../lib/tmdb';
+import { tmdbClient, isStaticEnvironment } from '../lib/tmdb-client';
+import useIntersectionObserver from '../hooks/useIntersectionObserver';
 
 const Movies: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -12,16 +15,41 @@ const Movies: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
 
-  const fetchMovies = async (pageNum: number, reset: boolean = false, genreId: number | null = null) => {
+  const setTarget = useIntersectionObserver(
+    { threshold: 0.5 },
+    () => {
+      if (hasMore && !isLoading) {
+        loadMore();
+      }
+    },
+    hasMore
+  );
+
+  const fetchMovies = async (pageNum: number, reset: boolean = false, genreId: number | null = null, country: string | null = null) => {
     try {
       setIsLoading(true);
-      const endpoint = genreId 
-        ? `/api/movies/by-genre?genre=${genreId}&page=${pageNum}`
-        : `/api/movies/popular?page=${pageNum}`;
       
-      const response = await axios.get(endpoint);
-      const newMovies = response.data.results || [];
+      let response;
+      if (isStaticEnvironment()) {
+        // Use direct TMDB API for Android/static environments
+        if (genreId) {
+          response = await tmdbClient.getMoviesByGenre(genreId, pageNum, country);
+        } else {
+          response = await tmdbClient.getPopularMovies(pageNum, country);
+        }
+      } else {
+        // Use Next.js API routes for web
+        const endpoint = genreId 
+          ? `/api/movies/by-genre?genre=${genreId}&page=${pageNum}${country ? `&country=${country}` : ''}`
+          : `/api/movies/popular?page=${pageNum}${country ? `&country=${country}` : ''}`;
+        
+        const apiResponse = await axios.get(endpoint);
+        response = apiResponse.data;
+      }
+      
+      const newMovies = response.results || [];
       
       if (reset) {
         setMovies(newMovies);
@@ -29,7 +57,7 @@ const Movies: React.FC = () => {
         setMovies(prev => [...prev, ...newMovies]);
       }
       
-      setHasMore(pageNum < response.data.total_pages);
+      setHasMore(pageNum < response.total_pages);
     } catch (error) {
       console.error('Error fetching movies:', error);
     } finally {
@@ -38,24 +66,24 @@ const Movies: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchMovies(1, true, selectedGenre);
+    fetchMovies(1, true, selectedGenre, selectedCountry);
     setPage(1);
-  }, [selectedGenre]);
-
-  useEffect(() => {
-    fetchMovies(1, true);
-  }, []);
+  }, [selectedGenre, selectedCountry]);
 
   const loadMore = () => {
     if (!isLoading && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchMovies(nextPage, false, selectedGenre);
+      fetchMovies(nextPage, false, selectedGenre, selectedCountry);
     }
   };
 
   const handleGenreChange = (genreId: number | null) => {
     setSelectedGenre(genreId);
+  };
+
+  const handleCountryChange = (countryCode: string | null) => {
+    setSelectedCountry(countryCode);
   };
 
   return (
@@ -75,33 +103,24 @@ const Movies: React.FC = () => {
             selectedGenre={selectedGenre}
             onGenreChange={handleGenreChange}
           />
+          <CountryFilter
+            selectedCountry={selectedCountry}
+            onCountryChange={handleCountryChange}
+          />
         </div>
         
         <MovieGrid items={movies} type="movie" />
 
-        {isLoading && movies.length === 0 ? (
+        {isLoading && movies.length === 0 && (
           <LoadingSpinner size="large" className="py-20" />
-        ) : (
-          <>
-            {hasMore && (
-              <div className="text-center mt-12">
-                <button
-                  onClick={loadMore}
-                  disabled={isLoading}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center space-x-2 mx-auto"
-                >
-                  {isLoading ? (
-                    <>
-                      <LoadingSpinner size="small" />
-                      <span>Loading...</span>
-                    </>
-                  ) : (
-                    <span>Load More</span>
-                  )}
-                </button>
-              </div>
-            )}
-          </>
+        )}
+
+        <div ref={setTarget} className="h-10" />
+
+        {isLoading && movies.length > 0 && (
+          <div className="text-center py-8">
+            <LoadingSpinner size="medium" />
+          </div>
         )}
       </div>
     </>

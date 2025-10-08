@@ -97,3 +97,4 @@ if (typeof window !== 'undefined') {
     cache.cleanup();
   }, 10 * 60 * 1000);
 }
+

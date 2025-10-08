@@ -104,3 +104,4 @@ const GenreSection: React.FC<GenreSectionProps> = ({ type, title }) => {
 };
 
 export default GenreSection;
+
