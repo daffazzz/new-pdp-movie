@@ -33,6 +33,7 @@ export default function App({ Component, pageProps }: AppProps) {
         
         {/* PWA theme color */}
         <meta name="theme-color" content="#dc2626" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
