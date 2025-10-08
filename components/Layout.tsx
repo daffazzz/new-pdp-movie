@@ -123,31 +123,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col safe-area-inset">
       {/* Header */}
-      <header className="bg-gray-900/95 backdrop-blur-md border-b border-gray-800/50 sticky top-0 z-50" style={{paddingTop: 'env(safe-area-inset-top)'}}>
-        <div className="container mx-auto px-4">
+      <header className="bg-gradient-to-b from-black via-black/95 to-transparent backdrop-blur-md sticky top-0 z-50 transition-all duration-300" style={{paddingTop: 'env(safe-area-inset-top)'}}>
+        <div className="px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-             <Link href="/" className="flex items-center space-x-3">
-               <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center">
-                 <span className="text-white font-bold text-xs">PM</span>
+             <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200">
+               <div className="w-10 h-10 bg-red-600 rounded-md flex items-center justify-center shadow-lg">
+                 <span className="text-white font-bold text-sm">PM</span>
                </div>
-               <span className="text-xl font-bold text-white">PDP MOVIES</span>
+               <span className="text-2xl font-bold text-white tracking-tight">PDP MOVIES</span>
              </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center space-x-1">
               {navItems.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
-                  className={`nav-item tv-focusable flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 focus:outline-none ${
-                    isAndroidTV 
-                      ? 'focus:ring-4 focus:ring-gray-500 focus:scale-105 text-lg px-6 py-3'
-                      : ''
+                  className={`nav-item tv-focusable flex items-center space-x-2 px-4 py-2 rounded-md transition-all duration-200 focus:outline-none font-medium ${
+                    isAndroidTV
+                      ? 'focus:ring-4 focus:ring-red-500 focus:scale-105 text-lg px-6 py-3'
+                      : 'hover:bg-gray-800'
                   } ${
                     router.pathname === href
-                      ? 'bg-gray-700 text-white'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-800 focus:bg-gray-700 focus:text-white'
+                      ? 'text-white'
+                      : 'text-gray-300 hover:text-white focus:text-white'
                   }`}
                   tabIndex={0}
                 >
@@ -178,7 +178,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         placeholder="Search movies, TV shows..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-gray-700 text-white placeholder-gray-400 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-4 focus:ring-red-500/50 w-80 text-lg"
+                        className="bg-gray-800/90 text-white placeholder-gray-500 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 w-80 text-lg border border-gray-700 focus:border-red-500 transition-all duration-200"
                         autoComplete="off"
                         inputMode="none"
                         readOnly={isAndroidTV}
@@ -309,9 +309,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900/95 backdrop-blur-md border-t border-gray-800/50 mt-auto" style={{paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)'}}>
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center text-gray-400">
+      <footer className="bg-black border-t border-gray-800 mt-auto" style={{paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)'}}>
+        <div className="px-4 py-8">
+          <div className="text-center text-gray-500">
             <p className="text-sm font-medium">&copy; 2025 PDP MOVIES • Built with ❤️ by FROSTGARELINE</p>
           </div>
         </div>
